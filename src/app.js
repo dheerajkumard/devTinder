@@ -13,22 +13,16 @@ app.get("/user", (req, res, next) => {
     res.send("Multiple route handlers executed");  //output will be "Multiple route handlers executed"
 });
 
-// app.use("/admin", (req, res, next) => {
-//     console.log("Admin middleware");
-//     const token = "xyz";
-//     const adminAuthenticated = token === "xyzs"; // Simulating admin authentication
-//     if (adminAuthenticated) {
-//         next();
-//     }
-//     else {
-//         res.status(401).send("Unauthorized");
-//     }
-// });
-
 app.use("/admin", adminAuth);
 
 app.use("/admin/getAlldata", (req, res, next) => {
+
+    throw new Error("Simulated error"); // Simulating an error for testing
    res.send("All data retrieved successfully");
+});
+// error handling middleware
+app.use("/", (err,req,res,next) => {
+    res.status(500).send("Internal Server Error");
 });
 
 app.listen(3000, () => {

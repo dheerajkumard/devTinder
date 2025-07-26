@@ -65,13 +65,22 @@ app.delete("/user", async (req, res) => {
 app.patch("/user", async (req, res) => {
     const userId = req.body.userId;
     const data = req.body;
+    
     try {
+        const allowedUpdates = ["firstName", "lastName", "password", "skills" ];
+        const updates = Object.keys(data).every(key => allowedUpdates.includes(key));
+        if (!updates) {
+            throw new error("Invalid updates");
+        }
+         if(data.skills.length > 20) {
+          throw new error("Skills cannot exceed 20 items");
+        }
         await User.findByIdAndUpdate(userId, data);
         res.send("User updated successfully");
     }
     catch (error) {
-        console.error("Error updating user:", error);
-        res.status(500).send("Error updating user");
+        console.error("Error updating user:", error.message);
+        res.status(500).send("Error updating user" + error.message);
     }
 });
 

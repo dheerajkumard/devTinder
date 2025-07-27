@@ -6,25 +6,58 @@ const connectDB = require("./config/database");
 
 const User = require("./models/user");
 
+const bcrypt = require("bcrypt");
+
 app.use(express.json());
 
-app.post("/signup", async (req, res) => {
+const { validateSignupData } = require("./utils/validations");
 
-    const user = new User(req.body);
-    // const user = new User({
-    //     firstName: "Medhashree",
-    //     lastName: "Dheeraj",
-    //     email: "test@gmail.com",
-    //     password: "password123",
-    // });
+app.post("/signup", async (req, res) => {
     try {
+        const { firstName, lastName, email, password } = req.body;
+        validateSignupData(req);
+        const passwordHash = await bcrypt.hash(password, 10);
+
+    // const user = new User(req.body);
+    const user = new User({
+        firstName,
+        lastName,
+        email,
+        password: passwordHash,
+    });
+    
         await user.save();
         res.send("User created successfully");
     } catch (error) {
         console.error("Error creating user:", error);
-        res.status(500).send("Error creating user" + error.message);
+        res.status(500).send("Error creating user:" + error.message);
     }
 
+})
+
+app.post("/login", async (req, res) => {
+    try {
+        const { email, password } = req.body;
+        const user = await User.findOne({ email: email });
+        if(!user) {
+            // throw new error("User not found");
+            res.status(404).send("User not found");
+        }
+
+        const isPasswordValid = await bcrypt.compare(password, user.password);
+
+        if(isPasswordValid) {
+           res.send("Login successful");
+        }
+        else {
+            // throw new error("Invalid password");
+            res.status(400).send("Invalid password");
+        }
+
+    }catch (error) {
+        console.error("Error creating user:", error);
+        res.status(400).send("login is not successful:" + error.message);
+    }
 })
 // Fetching user data based on email
 app.get("/user", async (req, res) => {

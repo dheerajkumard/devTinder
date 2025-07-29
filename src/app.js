@@ -12,6 +12,8 @@ const jwt = require("jsonwebtoken");
 
 const cookieParser = require("cookie-parser");
 
+const { userAuth } = require("./middlewares/auth");
+
 app.use(express.json());
 app.use(cookieParser());
 
@@ -53,7 +55,9 @@ app.post("/login", async (req, res) => {
 
         if (isPasswordValid) {
 
-            const token = await jwt.sign({ _id: user._id }, "DevTinderSecret");
+            const token = await jwt.sign({ _id: user._id }, "DevTinderSecret", {
+                expiresIn: "7d",
+            });
             res.cookie("token", token);
             console.log("Token:", token);
             res.send("Login successful");
@@ -69,27 +73,25 @@ app.post("/login", async (req, res) => {
     }
 })
 
-app.get("/profile", async (req, res) => {
+app.get("/profile", userAuth, async (req, res) => {
     try {
-        const cookies = req.cookies;
-        const { token } = cookies;
-        if (!token) {
-            return res.status(401).send("Unauthorized: No token provided");
-        }
-        const decoded = await jwt.verify(token, "DevTinderSecret");
-        const { _id } = decoded;
-        const user = await User.findById(_id);
-        if (!user) {
-            return res.status(404).send("User not found");
-        }
+        const user = req.user; // using middleware to get user
         res.send(user);
-        console.log("Cookies:", cookies);
-        res.send("reading cookies");
     } catch (error) {
-        console.error("Error creating user:", error);
         res.status(400).send("Error:" + error.message);
     }
 })
+
+app.post("/sendRequest", userAuth, async (req, res) => {
+    try {
+        const user = req.user; // using middleware to get user
+        res.send(user.firstName + " " + " has sent you a request");
+    } catch (error) {
+        res.status(400).send("Error:" + error.message);
+    }
+})
+
+
 
 
 // Fetching user data based on email

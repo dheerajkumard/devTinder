@@ -51,13 +51,11 @@ app.post("/login", async (req, res) => {
             res.status(404).send("User not found");
         }
 
-        const isPasswordValid = await bcrypt.compare(password, user.password);
+        const isPasswordValid = await user.validatePassword(password);
 
         if (isPasswordValid) {
 
-            const token = await jwt.sign({ _id: user._id }, "DevTinderSecret", {
-                expiresIn: "7d",
-            });
+            const token = await user.getJwtToken();
             res.cookie("token", token);
             console.log("Token:", token);
             res.send("Login successful");

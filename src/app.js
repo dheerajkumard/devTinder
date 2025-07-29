@@ -8,7 +8,12 @@ const User = require("./models/user");
 
 const bcrypt = require("bcrypt");
 
+const jwt = require("jsonwebtoken");
+
+const cookieParser = require("cookie-parser");
+
 app.use(express.json());
+app.use(cookieParser());
 
 const { validateSignupData } = require("./utils/validations");
 
@@ -18,14 +23,14 @@ app.post("/signup", async (req, res) => {
         validateSignupData(req);
         const passwordHash = await bcrypt.hash(password, 10);
 
-    // const user = new User(req.body);
-    const user = new User({
-        firstName,
-        lastName,
-        email,
-        password: passwordHash,
-    });
-    
+        // const user = new User(req.body);
+        const user = new User({
+            firstName,
+            lastName,
+            email,
+            password: passwordHash,
+        });
+
         await user.save();
         res.send("User created successfully");
     } catch (error) {
@@ -39,26 +44,54 @@ app.post("/login", async (req, res) => {
     try {
         const { email, password } = req.body;
         const user = await User.findOne({ email: email });
-        if(!user) {
+        if (!user) {
             // throw new error("User not found");
             res.status(404).send("User not found");
         }
 
         const isPasswordValid = await bcrypt.compare(password, user.password);
 
-        if(isPasswordValid) {
-           res.send("Login successful");
+        if (isPasswordValid) {
+
+            const token = await jwt.sign({ _id: user._id }, "DevTinderSecret");
+            res.cookie("token", token);
+            console.log("Token:", token);
+            res.send("Login successful");
         }
         else {
             // throw new error("Invalid password");
             res.status(400).send("Invalid password");
         }
 
-    }catch (error) {
+    } catch (error) {
         console.error("Error creating user:", error);
         res.status(400).send("login is not successful:" + error.message);
     }
 })
+
+app.get("/profile", async (req, res) => {
+    try {
+        const cookies = req.cookies;
+        const { token } = cookies;
+        if (!token) {
+            return res.status(401).send("Unauthorized: No token provided");
+        }
+        const decoded = await jwt.verify(token, "DevTinderSecret");
+        const { _id } = decoded;
+        const user = await User.findById(_id);
+        if (!user) {
+            return res.status(404).send("User not found");
+        }
+        res.send(user);
+        console.log("Cookies:", cookies);
+        res.send("reading cookies");
+    } catch (error) {
+        console.error("Error creating user:", error);
+        res.status(400).send("Error:" + error.message);
+    }
+})
+
+
 // Fetching user data based on email
 app.get("/user", async (req, res) => {
     try {
@@ -85,7 +118,7 @@ app.get("/feed", async (req, res) => {
 app.delete("/user", async (req, res) => {
     const userId = req.body.userId;
     try {
-        await User.findByIdAndDelete({_id: userId});
+        await User.findByIdAndDelete({ _id: userId });
         // await User.findByIdAndDelete(userId); // this also works
         res.send("User deleted successfully");
     }
@@ -98,15 +131,15 @@ app.delete("/user", async (req, res) => {
 app.patch("/user", async (req, res) => {
     const userId = req.body.userId;
     const data = req.body;
-    
+
     try {
-        const allowedUpdates = ["firstName", "lastName", "password", "skills" ];
+        const allowedUpdates = ["firstName", "lastName", "password", "skills"];
         const updates = Object.keys(data).every(key => allowedUpdates.includes(key));
         if (!updates) {
             throw new error("Invalid updates");
         }
-         if(data.skills.length > 20) {
-          throw new error("Skills cannot exceed 20 items");
+        if (data.skills.length > 20) {
+            throw new error("Skills cannot exceed 20 items");
         }
         await User.findByIdAndUpdate(userId, data);
         res.send("User updated successfully");
@@ -116,7 +149,6 @@ app.patch("/user", async (req, res) => {
         res.status(500).send("Error updating user" + error.message);
     }
 });
-
 
 connectDB()
     .then(() => {

@@ -13,6 +13,26 @@ const validateSignupData = (req)=> {
     }
 }
 
+const validEditFields = (req) => {
+    const allowedUpdateFields = ["firstName", "lastName", "email", "photoUrl","gender", "skills"];
+    const updateFields = Object.keys(req.body).every(field => allowedUpdateFields.includes(field));
+    if (!updateFields) {
+        throw new Error("Invalid fields for update");
+    }
+    return updateFields;
+}
+
+const validPasswordEditField = (req) => {
+    const allowedUpdateFields = ["password"];
+    const updatePasswordField = Object.keys(req.body).every(field => allowedUpdateFields.includes(field));
+    if (!updatePasswordField) {
+        throw new Error("Invalid fields for password update");
+    }
+    return updatePasswordField;
+}
+
 module.exports = {
-    validateSignupData
+    validateSignupData,
+    validEditFields,
+    validPasswordEditField
 };

@@ -25,9 +25,14 @@ userRouter.get('/user/connections', userAuth, async (req, res) => {
                 { fromUserId: loggedinUser._id, status: "accepted" },
                 { toUserId: loggedinUser._id, status: "accepted" }
             ]
-        }).populate('fromUserId', 'firstName lastName email')
+        }).populate('fromUserId', 'firstName lastName email').populate('toUserId', 'firstName lastName email');
 
-        const data = connections.map((connection) => connection.fromUserId);
+        const data = connections.map((connection) => {
+            if (connection.fromUserId._id.toString() === loggedinUser._id.toString()) {
+                return connection.toUserId
+            }
+           return connection.fromUserId
+        });
 
         res.json({ message: "Connections fetched successfully", data: data });
 

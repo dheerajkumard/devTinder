@@ -18,5 +18,5 @@ POSt /request/review/rejected/:requestId
 
 ## userRouter
 GET /user/connections
-GET /user/requests
+GET /user/requests/received
 GET /user/feed  - Gets you all the profiles of other users on platform
